@@ -1,0 +1,40 @@
+*******Components*******
+
+Source: On-Prem SQL Server
+Destination: ADLS and Azure Synapse
+Tools: ADF, Databricks, Power BI
+
+
+*******Activities Performed*******
+
+1. Source data is on On-Prem SQL Server 
+2. Migrate/ Copy data from On-Prem SQL Server to ADLS using ADF
+3. Create Bronze, Silver, Gold levels in ADLS and transformations using Databricks
+4. Develop reports in Power BI 
+5. Use Azure Active Directory and key vaults for Secure Dataflow
+
+*******Pipeline Development*******
+
+1. Create secrets in Azure Key vault to store the Username and password of On-Prem SQL Server.
+2. Create Self Hosted Integration Runtime for On-Premise
+	ADF> Manage> IR> Create Self-hosted IR> Choose Express Setup or Manual Setup> IR is created
+
+3. In ADF:
+	1.Choose SQL Server as source DS.
+	2.Choose the self hosted IR in linked Service and provide Server & DB names from SQL Server and use key vault secrets for the SQL Server password.
+	3.Choose ADLS Gen2 as sink DS with parquet format.
+	4.To loop across all tables in specific schema. Use the below query
+	"select
+	s.name as SchemaName, t.name as TableName
+	from sys.tables t inner join sys.schema s
+	on t.schema_id = s.schema_id where s.name = 'any specific schema' "
+	
+	5.Use the above query in lookup activity to fetch the list of tables.
+	6.Feed the output of lookup with Array of schema names and table names to foreach activity.
+	7.Create copy activity inside foreach.
+	8.Declare the sink parameters for schema and table name to save the output file in format:
+	  Bronze/Schema_name/table_name.parquet - Run the pipeline > now the bronze level data is READY!!
+	9.Use Databricks to perform transformations and save as Gold Level table
+	10.Include the Databricks notebooks in the ADF pipeline.
+
+4.Import the Gold Level table and build a Power BI report.
